@@ -1,0 +1,855 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+
+// Main App Component
+const App = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [testSubmitted, setTestSubmitted] = useState(false);
+  const [testResults, setTestResults] = useState(null);
+
+  // Check login status from localStorage on initial load
+  useEffect(() => {
+    const loggedIn = localStorage.getItem('nust_cbnet_loggedIn') === 'true';
+    if (loggedIn) {
+      setIsLoggedIn(true);
+      // If test was submitted before, retrieve results
+      const results = JSON.parse(localStorage.getItem('nust_cbnet_testResults'));
+      if (results) {
+        setTestResults(results);
+        setTestSubmitted(true);
+      }
+    }
+  }, []);
+
+  // Handle successful login
+  const handleLoginSuccess = () => {
+    setIsLoggedIn(true);
+    localStorage.setItem('nust_cbnet_loggedIn', 'true');
+  };
+
+  // Handle test submission
+  const handleTestSubmit = (results) => {
+    setTestResults(results);
+    setTestSubmitted(true);
+    localStorage.setItem('nust_cbnet_testResults', JSON.stringify(results));
+  };
+
+  // Render different components based on login and test submission status
+  if (!isLoggedIn) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  } else if (!testSubmitted) {
+    return <TestInterface onTestSubmit={handleTestSubmit} />;
+  } else {
+    return <Summary testResults={testResults} />;
+  }
+};
+
+// Login Component
+const Login = ({ onLoginSuccess }) => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  // Handle login form submission
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (username === 'nustuser01' && password === 'password') {
+      onLoginSuccess();
+    } else {
+      setError('Invalid username or password.');
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white font-inter">
+      {/* Top Blue Bar */}
+      <div className="w-full bg-gradient-to-r from-blue-900 to-blue-700 h-24 absolute top-0 left-0 shadow-lg flex items-center px-8">
+        <h1 className="text-3xl font-bold text-white text-shadow">NUST e-Test</h1>
+      </div>
+
+      <div className="border border-blue-600 p-8 pt-6 rounded-md shadow-lg bg-white relative top-12 w-full max-w-sm">
+        <form onSubmit={handleLogin}>
+          <div className="mb-4">
+            <label htmlFor="username" className="block text-gray-700 text-sm font-medium mb-2">
+              User: nustuser01
+            </label>
+            <input
+              type="text"
+              id="username"
+              className="appearance-none border border-gray-400 rounded-sm w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:border-blue-500 transition duration-200"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+          </div>
+          <div className="mb-6">
+            <label htmlFor="password" className="block text-gray-700 text-sm font-medium mb-2">
+              Password:
+            </label>
+            <input
+              type="password"
+              id="password"
+              className="appearance-none border border-gray-400 rounded-sm w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:border-blue-500 transition duration-200"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
+          <div className="flex justify-center">
+            <button
+              type="submit"
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1.5 px-6 rounded-md border border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-500 shadow-sm"
+            >
+              Submit
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Sticky Footer */}
+      <footer className="w-full bg-gray-800 text-white p-4 text-center text-sm absolute bottom-0">
+        <p>This is just a Sample of Computer Based NUST Entry Test (CBNET) . <a href="#" className="underline hover:text-blue-300">Go to Main Page</a></p>
+      </footer>
+    </div>
+  );
+};
+
+// Question Data (Mock Data)
+const questionsData = [
+  // Synonyms (10)
+  { id: 0, section: "Synonyms", question: "Choose the word closest in meaning to 'Accord':", options: ["Disunity", "Cord", "Concurrence", "Pack"], answer: "Concurrence" },
+  { id: 1, section: "Synonyms", question: "Choose the word closest in meaning to 'Mediation':", options: ["Annoyance", "Irritating", "Aggregate", "Intercession"], answer: "Intercession" },
+  { id: 2, section: "Synonyms", question: "Choose the word closest in meaning to 'Anthology':", options: ["Analogy", "Compilation", "Collage", "Beast"], answer: "Compilation" },
+  { id: 3, section: "Synonyms", question: "Choose the word closest in meaning to 'Fulminate':", options: ["Vilify", "Praise", "Laud", "Loud"], answer: "Vilify" },
+  { id: 4, section: "Synonyms", question: "Choose the word closest in meaning to 'Heartfelt':", options: ["Cold", "False", "Cordial", "Shallow"], answer: "Cordial" },
+  { id: 5, section: "Synonyms", question: "Choose the word closest in meaning to 'Nefarious':", options: ["Respectable", "Detestable", "Admirable", "Reputable"], answer: "Detestable" },
+  { id: 6, section: "Synonyms", question: "Choose the word closest in meaning to 'Venerable':", options: ["Despicable", "Esteemed", "Common", "Youthful"], answer: "Esteemed" },
+  { id: 7, section: "Synonyms", question: "Choose the word closest in meaning to 'Befuddle':", options: ["Clarify", "Confuse", "Simplify", "Explain"], answer: "Confuse" },
+  { id: 8, section: "Synonyms", question: "Choose the word closest in meaning to 'Mollify':", options: ["Aggravate", "Placate", "Irritate", "Inflame"], answer: "Placate" },
+  { id: 9, section: "Synonyms", question: "Choose the word closest in meaning to 'Jubilant':", options: ["Sad", "Joyful", "Depressed", "Gloomy"], answer: "Joyful" },
+  // Antonyms (10)
+  { id: 10, section: "Antonyms", question: "Choose the word most opposite in meaning to 'Fallacy':", options: ["Paradox", "Flaw", "Accuracy", "Prejudice"], answer: "Accuracy" },
+  { id: 11, section: "Antonyms", question: "Choose the word most opposite in meaning to 'Benign':", options: ["Amiable", "Malignant", "Kind", "Generous"], answer: "Malignant" },
+  { id: 12, section: "Antonyms", question: "Choose the word most opposite in meaning to 'Tireless':", options: ["Diligent", "Vigorous", "Weary", "Assiduous"], answer: "Weary" },
+  { id: 13, section: "Antonyms", question: "Choose the word most opposite in meaning to 'Indistinguishable':", options: ["Identical", "Indispensable", "Interchangeable", "Diverse"], answer: "Diverse" },
+  { id: 14, section: "Antonyms", question: "Choose the word most opposite in meaning to 'Fervent':", options: ["Ardent", "Fanatic", "Zeal", "Apathetic"], answer: "Apathetic" },
+  { id: 15, section: "Antonyms", question: "Choose the word most opposite in meaning to 'Validate':", options: ["Ratify", "Sanction", "Endorse", "Repudiate"], answer: "Repudiate" },
+  { id: 16, section: "Antonyms", question: "Choose the word most opposite in meaning to 'Outrageous':", options: ["Barbarous", "Sensible", "Steep", "Crazy"], answer: "Sensible" },
+  { id: 17, section: "Antonyms", question: "Choose the word most opposite in meaning to 'Vivid':", options: ["Glowing", "Flamboyant", "Gaudy", "Fade"], answer: "Fade" },
+  { id: 18, section: "Antonyms", question: "Choose the word most opposite in meaning to 'Incomparable':", options: ["Unique", "Rival", "Attire", "Routine"], answer: "Rival" },
+  { id: 19, section: "Antonyms", question: "Choose the word most opposite in meaning to 'Fortunate':", options: ["Provident", "Adverse", "Happy", "Chance"], answer: "Adverse" },
+  // Spellings (5)
+  { id: 20, section: "Spellings", question: "Choose the correctly spelled word:", options: ["Accomodation", "Accommodation", "Acommodation", "Accomodation"], answer: "Accommodation" },
+  { id: 21, section: "Spellings", question: "Choose the correctly spelled word:", options: ["Embarrassment", "Embarassment", "Embarrasment", "Embarasment"], answer: "Embarrassment" },
+  { id: 22, section: "Spellings", question: "Choose the correctly spelled word:", options: ["Millenium", "Millennium", "Milennium", "Milleniumm"], answer: "Millennium" },
+  { id: 23, section: "Spellings", question: "Choose the correctly spelled word:", options: ["Occurence", "Occurrence", "Ocurence", "Occurance"], answer: "Occurrence" },
+  { id: 24, section: "Spellings", question: "Choose the correctly spelled word:", options: ["Seperate", "Separate", "Seperete", "Separete"], answer: "Separate" },
+  // Analogies (5)
+  { id: 25, section: "Analogies", question: "Big : Small :: Tall : ?", options: ["Short", "Long", "High", "Wide"], answer: "Short" },
+  { id: 26, section: "Analogies", question: "Doctor : Hospital :: Teacher : ?", options: ["Kitchen", "School", "Office", "Library"], answer: "School" },
+  { id: 27, section: "Analogies", question: "Pen : Write :: Knife : ?", options: ["Cut", "Eat", "Draw", "Sew"], answer: "Cut" },
+  { id: 28, section: "Analogies", question: "Cat : Feline :: Dog : ?", options: ["Canine", "Bovine", "Equine", "Porcine"], answer: "Canine" },
+  { id: 29, section: "Analogies", question: "Book : Page :: House : ?", options: ["Room", "Roof", "Door", "Window"], answer: "Room" },
+  // Comprehension (5) - Placeholder passages
+  {
+    id: 30,
+    section: "Comprehension",
+    question: "Passage: The internet has revolutionized communication, making it faster and more accessible. However, it has also raised concerns about privacy and misinformation. Social media platforms amplify voices but often spread unverified information. Governments and organizations are now focusing on regulating online content to ensure safety and accuracy.\nWhat is the main idea of the passage?",
+    options: ["The internet has no impact on communication", "The internet improves communication but poses challenges", "Social media is the only source of misinformation", "Governments should ban the internet"],
+    answer: "The internet improves communication but poses challenges",
+  },
+  {
+    id: 31,
+    section: "Comprehension",
+    question: "Passage: According to the passage, what is a benefit of the internet?",
+    options: ["Increased privacy", "Faster communication", "Elimination of misinformation", "Reduced accessibility"],
+    answer: "Faster communication",
+  },
+  {
+    id: 32,
+    section: "Comprehension",
+    question: "Passage: What is a concern mentioned about social media?",
+    options: ["It limits communication", "It spreads unverified information", "It is heavily regulated", "It reduces accessibility"],
+    answer: "It spreads unverified information",
+  },
+  {
+    id: 33,
+    section: "Comprehension",
+    question: "Passage: What are governments and organizations trying to do?",
+    options: ["Ban social media", "Regulate online content", "Eliminate the internet", "Increase misinformation"],
+    answer: "Regulate online content",
+  },
+  {
+    id: 34,
+    section: "Comprehension",
+    question: "Passage: The word 'amplify' in the passage most closely means:",
+    options: ["Reduce", "Silence", "Increase", "Ignore"],
+    answer: "Increase",
+  },
+  // Grammar (5)
+  { id: 35, section: "Grammar", question: "Choose the correct sentence:", options: ["She don’t like to study late at night.", "She doesn’t like to study late at night.", "She not like to study late at night.", "She isn’t like to study late at night."], answer: "She doesn’t like to study late at night." },
+  { id: 36, section: "Grammar", question: "Identify the error in the sentence: \"The team have won the match.\"", options: ["The", "Team", "Have", "Won"], answer: "Have" },
+  { id: 37, section: "Grammar", question: "Choose the correct form of the verb: \"If I ___ rich, I would travel the world.\"", options: ["Am", "Was", "Were", "Be"], answer: "Were" },
+  { id: 38, section: "Grammar", question: "Which sentence is in the passive voice?", options: ["The dog chased the cat.", "The cat was chased by the dog.", "The cat ran up the tree.", "The dog barked loudly."], answer: "The cat was chased by the dog." },
+  { id: 39, section: "Grammar", question: "Choose the correct pronoun: \"___ is going to the party tonight?\"", options: ["Who", "Whom", "Whose", "Which"], answer: "Who" },
+];
+
+// Map sections to question IDs
+const sectionsMap = {
+  "Synonyms": { start: 0, end: 9 },
+  "Antonyms": { start: 10, end: 19 },
+  "Spellings": { start: 20, end: 24 },
+  "Analogies": { start: 25, end: 29 },
+  "Comprehension": { start: 30, end: 34 },
+  "Grammar": { start: 35, end: 39 },
+};
+
+const TestInterface = ({ onTestSubmit }) => {
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  // Store user answers as an object where key is question ID and value is selected option
+  const [userAnswers, setUserAnswers] = useState(() => {
+    // Initialize from localStorage if available
+    const savedAnswers = localStorage.getItem('nust_cbnet_userAnswers');
+    return savedAnswers ? JSON.parse(savedAnswers) : {};
+  });
+  const [markedForReview, setMarkedForReview] = useState(() => {
+    // Initialize from localStorage if available
+    const savedMarked = localStorage.getItem('nust_cbnet_markedForReview');
+    return savedMarked ? JSON.parse(savedMarked) : [];
+  });
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const savedTime = localStorage.getItem('nust_cbnet_timeLeft');
+    // 80 minutes in seconds = 80 * 60 = 4800 seconds
+    return savedTime ? parseInt(savedTime, 10) : 4800;
+  });
+  const [testStarted, setTestStarted] = useState(() => {
+    // Test is considered started if timeLeft is not full or if there are saved answers
+    return localStorage.getItem('nust_cbnet_testStarted') === 'true';
+  });
+  const timerRef = useRef(null);
+  const [showFinishModal, setShowFinishModal] = useState(false);
+  const [startTime, setStartTime] = useState(() => {
+    const savedStartTime = localStorage.getItem('nust_cbnet_startTime');
+    return savedStartTime ? new Date(savedStartTime) : null;
+  });
+
+  // Effect for countdown timer
+  useEffect(() => {
+    if (testStarted && timeLeft > 0) {
+      timerRef.current = setInterval(() => {
+        setTimeLeft((prevTime) => {
+          const newTime = prevTime - 1;
+          localStorage.setItem('nust_cbnet_timeLeft', newTime.toString());
+          if (newTime <= 0) {
+            clearInterval(timerRef.current);
+            handleSubmitTest(true); // Submit if time runs out
+          }
+          return newTime;
+        });
+      }, 1000);
+    }
+
+    // Cleanup interval on component unmount or test end
+    return () => clearInterval(timerRef.current);
+  }, [testStarted, timeLeft]); // Re-run effect if testStarted or timeLeft changes
+
+  // Save user answers and markedForReview to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('nust_cbnet_userAnswers', JSON.stringify(userAnswers));
+  }, [userAnswers]);
+
+  useEffect(() => {
+    localStorage.setItem('nust_cbnet_markedForReview', JSON.stringify(markedForReview));
+  }, [markedForReview]);
+
+  // Save test started status
+  useEffect(() => {
+    localStorage.setItem('nust_cbnet_testStarted', testStarted.toString());
+  }, [testStarted]);
+
+  // Save start time
+  useEffect(() => {
+    if (startTime) {
+      localStorage.setItem('nust_cbnet_startTime', startTime.toISOString());
+    }
+  }, [startTime]);
+
+
+  // Start test function
+  const startTest = () => {
+    setTestStarted(true);
+    setStartTime(new Date()); // Set start time when test begins
+  };
+
+  // Format time for display
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const formatStartTime = (date) => {
+    if (!date) return 'N/A';
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
+    return `${formattedHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+  };
+
+  // Handle option selection
+  const handleOptionChange = (e) => {
+    const newAnswers = { ...userAnswers, [currentQuestion.id]: e.target.value };
+    setUserAnswers(newAnswers);
+  };
+
+  // Handle marking for review
+  const handleMarkForReview = () => {
+    if (markedForReview.includes(currentQuestion.id)) {
+      setMarkedForReview(markedForReview.filter((id) => id !== currentQuestion.id));
+    } else {
+      setMarkedForReview([...markedForReview, currentQuestion.id]);
+    }
+  };
+
+  // Calculate scores and generate results
+  const calculateResults = useCallback(() => {
+    let totalCorrect = 0;
+    const sectionScores = {};
+    const questionStatuses = {}; // To track attempted, correct, incorrect, marked for review
+
+    // Initialize section scores
+    Object.keys(sectionsMap).forEach(sectionName => {
+      sectionScores[sectionName] = { correct: 0, total: 0 };
+    });
+
+    questionsData.forEach((q) => {
+      const userAnswer = userAnswers[q.id];
+      const isCorrect = userAnswer === q.answer;
+      const isAttempted = userAnswer !== undefined;
+
+      questionStatuses[q.id] = {
+        attempted: isAttempted,
+        correct: isAttempted && isCorrect,
+        markedForReview: markedForReview.includes(q.id),
+      };
+
+      if (isAttempted && isCorrect) {
+        totalCorrect++;
+      }
+
+      // Update section scores
+      if (sectionScores[q.section]) {
+        sectionScores[q.section].total++;
+        if (isAttempted && isCorrect) {
+          sectionScores[q.section].correct++;
+        }
+      }
+    });
+
+    return {
+      totalQuestions: questionsData.length,
+      totalCorrect,
+      totalAttempted: Object.keys(userAnswers).length,
+      sectionScores,
+      questionStatuses,
+      timeLeftAtSubmission: timeLeft,
+      userAnswers: userAnswers, // Include user answers for detailed summary
+    };
+  }, [userAnswers, markedForReview, timeLeft]);
+
+  // Handle test submission
+  const handleSubmitTest = useCallback((timedOut = false) => {
+    clearInterval(timerRef.current);
+    const results = calculateResults();
+    results.timedOut = timedOut; // Add a flag if submission was due to timeout
+    onTestSubmit(results);
+    // Clear localStorage items related to the test in progress
+    localStorage.removeItem('nust_cbnet_userAnswers');
+    localStorage.removeItem('nust_cbnet_markedForReview');
+    localStorage.removeItem('nust_cbnet_timeLeft');
+    localStorage.removeItem('nust_cbnet_testStarted');
+    localStorage.removeItem('nust_cbnet_startTime');
+  }, [calculateResults, onTestSubmit]);
+
+  // Current question object
+  const currentQuestion = questionsData[currentQuestionIndex];
+  const totalQuestions = questionsData.length;
+
+  // Navigation handlers
+  const handleNavigation = (direction) => {
+    if (direction === 'next' && currentQuestionIndex < totalQuestions - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    } else if (direction === 'prev' && currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+    } else if (direction === 'first') {
+      setCurrentQuestionIndex(0);
+    } else if (direction === 'last') {
+      setCurrentQuestionIndex(totalQuestions - 1);
+    }
+  };
+
+  // Section navigation
+  const navigateToSection = (sectionName) => {
+    const sectionInfo = sectionsMap[sectionName];
+    if (sectionInfo) {
+      setCurrentQuestionIndex(sectionInfo.start);
+    }
+  };
+
+  // Get current section name
+  const getCurrentSectionName = (index) => {
+    for (const sectionName in sectionsMap) {
+      const { start, end } = sectionsMap[sectionName];
+      if (index >= start && index <= end) {
+        return sectionName;
+      }
+    }
+    return '';
+  };
+
+  const currentSectionName = getCurrentSectionName(currentQuestionIndex);
+  const sectionNames = Object.keys(sectionsMap);
+  const currentSectionIndexInList = sectionNames.indexOf(currentSectionName);
+
+  const handleNextSection = () => {
+    if (currentSectionIndexInList < sectionNames.length - 1) {
+      const nextSectionName = sectionNames[currentSectionIndexInList + 1];
+      navigateToSection(nextSectionName);
+    }
+  };
+
+  const handlePreviousSection = () => {
+    if (currentSectionIndexInList > 0) {
+      const prevSectionName = sectionNames[currentSectionIndexInList - 1];
+      navigateToSection(prevSectionName);
+    }
+  };
+
+  if (!testStarted) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white font-inter">
+        {/* Top Blue Bar */}
+        <div className="w-full bg-gradient-to-r from-blue-900 to-blue-700 h-24 absolute top-0 left-0 shadow-lg flex items-center px-8">
+          <h1 className="text-3xl font-bold text-white text-shadow">NUST e-Test</h1>
+        </div>
+
+        <div className="border border-blue-600 p-8 pt-6 rounded-md shadow-lg bg-white relative top-12 w-full max-w-lg text-center">
+          <h2 className="text-3xl font-bold text-gray-800 mb-4">Test 5: NUST NET-2025 (English Section)</h2>
+          <p className="text-lg text-gray-600 mb-6">Total Questions: 40 | Duration: 80 minutes</p>
+          <button
+            onClick={startTest}
+            className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200 shadow-md"
+          >
+            Start Test
+          </button>
+        </div>
+
+        {/* Sticky Footer */}
+        <footer className="w-full bg-gray-800 text-white p-4 text-center text-sm absolute bottom-0">
+          <p>This is just a Sample of Computer Based NUST Entry Test (CBNET) . <a href="#" className="underline hover:text-blue-300">Go to Main Page</a></p>
+        </footer>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col min-h-screen bg-white font-inter">
+      {/* Header - Top Blue Bar */}
+      <header className="w-full bg-gradient-to-r from-blue-900 to-blue-700 h-24 shadow-lg flex items-center px-8 relative z-10">
+        <h1 className="text-3xl font-bold text-white text-shadow">NUST e-Test</h1>
+        <div className="flex-grow text-center text-white text-xl font-semibold">
+          Engineering/Computer Science/BS Mathematics (With Chemistry)
+        </div>
+        <div className="text-white text-xl font-semibold">NUSTOS (SCME014)</div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="flex-grow flex flex-col p-4 md:p-6 lg:p-8 bg-gray-100">
+        {/* Question Info Bar */}
+        <div className="bg-white border border-gray-300 rounded-sm shadow-sm p-3 mb-4 flex justify-between items-center text-gray-700 text-lg font-semibold">
+          <div className="flex-1">Question No : {currentQuestionIndex + 1} of {totalQuestions}</div>
+          <div className="flex-1 text-center"></div> {/* Empty space for alignment */}
+          <div className="flex-1 text-right">Marks : 1</div>
+        </div>
+
+        <div className="flex flex-col md:flex-row flex-grow gap-4">
+          {/* Question and Options Area */}
+          <section className="flex-grow bg-white border border-gray-300 rounded-sm shadow-sm p-6 flex flex-col">
+            <div className="mb-6 pb-4 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-800 mb-3">Question</h2>
+              <div className="min-h-[100px] border border-gray-300 rounded-sm p-4 bg-gray-50 overflow-auto whitespace-pre-line text-gray-700">
+                {currentQuestion.question}
+              </div>
+            </div>
+
+            <div className="flex-grow mb-8">
+              <h2 className="text-xl font-bold text-gray-800 mb-3">Answer (Please select your correct option)</h2>
+              <div className="space-y-4">
+                {currentQuestion.options.map((option, index) => (
+                  <label
+                    key={index}
+                    className={`flex items-center p-3 border border-gray-300 rounded-md cursor-pointer transition duration-200 ease-in-out
+                      ${
+                        userAnswers[currentQuestion.id] === option
+                          ? 'bg-blue-100 border-blue-400'
+                          : 'bg-white hover:bg-gray-50'
+                      }`}
+                  >
+                    <input
+                      type="radio"
+                      name={`question-${currentQuestion.id}`}
+                      value={option}
+                      checked={userAnswers[currentQuestion.id] === option}
+                      onChange={handleOptionChange}
+                      className="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500 focus:outline-none cursor-pointer"
+                    />
+                    <span className="ml-3 text-gray-800 text-base">{option}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom Panel with Timer and Buttons */}
+            <div className="mt-auto pt-4 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center">
+              <div className="text-gray-700 text-sm mb-4 sm:mb-0 mr-4 flex-shrink-0">
+                <p>Start Time : {formatStartTime(startTime)}</p>
+                <div className="flex items-center mt-1">
+                  <span className="text-2xl font-bold text-blue-700 mr-2">{Math.floor(timeLeft / 60)}</span>
+                  <span className="text-lg">min</span>
+                  <div className="w-6 h-6 ml-2 text-gray-600">
+                    <svg fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l3 3a1 1 0 001.414-1.414L11 9.586V6z" clipRule="evenodd"></path></svg>
+                  </div>
+                  <span className="ml-1 text-gray-600">Remaining</span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap justify-center sm:justify-end gap-2">
+                <button
+                  onClick={() => {/* Save functionality is automatic, this button is for visual consistency */}}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1.5 px-4 rounded-md border border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-500 shadow-sm flex items-center"
+                >
+                  <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM3 8a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM5 14a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z"></path></svg>
+                  Save
+                </button>
+                <button
+                  onClick={() => handleNavigation('next')}
+                  disabled={currentQuestionIndex === totalQuestions - 1}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1.5 px-4 rounded-md border border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 shadow-sm flex items-center"
+                >
+                  <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd"></path></svg>
+                  Next
+                </button>
+                <button
+                  onClick={() => handleNavigation('prev')}
+                  disabled={currentQuestionIndex === 0}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1.5 px-4 rounded-md border border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 shadow-sm flex items-center"
+                >
+                  <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M7.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L4.414 9H17a1 1 0 110 2H4.414l3.293 3.293a1 1 0 010 1.414z" clipRule="evenodd"></path></svg>
+                  Prev
+                </button>
+                <button
+                  onClick={handlePreviousSection}
+                  disabled={currentSectionIndexInList === 0}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1.5 px-4 rounded-md border border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 shadow-sm flex items-center"
+                >
+                  <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M15.707 15.707a1 1 0 01-1.414 0L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414L10 8.586l4.293-4.293a1 1 0 011.414 1.414L11.414 10l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd"></path></svg>
+                  Prev Section
+                </button>
+                <button
+                  onClick={handleNextSection}
+                  disabled={currentSectionIndexInList === sectionNames.length - 1}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1.5 px-4 rounded-md border border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 shadow-sm flex items-center"
+                >
+                  <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414L10 8.586l4.293-4.293a1 1 0 011.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414 0z" clipRule="evenodd"></path></svg>
+                  Next Section
+                </button>
+                <button
+                  onClick={() => handleNavigation('first')}
+                  disabled={currentQuestionIndex === 0}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1.5 px-4 rounded-md border border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 shadow-sm flex items-center"
+                >
+                  <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd"></path></svg>
+                  First
+                </button>
+                <button
+                  onClick={() => handleNavigation('last')}
+                  disabled={currentQuestionIndex === totalQuestions - 1}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1.5 px-4 rounded-md border border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 shadow-sm flex items-center"
+                >
+                  <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-11a1 1 0 00-1 1v2a1 1 0 102 0V8a1 1 0 00-1-1zm-1 5a1 1 0 100 2h2a1 1 0 100-2H8z" clipRule="evenodd"></path></svg>
+                  Last
+                </button>
+                <button
+                  onClick={handleMarkForReview}
+                  className={`py-1.5 px-4 rounded-md font-semibold transition duration-200 shadow-sm focus:outline-none focus:ring-1
+                    ${markedForReview.includes(currentQuestion.id)
+                      ? 'bg-yellow-500 hover:bg-yellow-600 text-white border border-yellow-600'
+                      : 'bg-yellow-200 hover:bg-yellow-300 text-yellow-800 border border-yellow-400'
+                    } flex items-center
+                    `}
+                >
+                  <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-11a1 1 0 00-1 1v2a1 1 0 102 0V8a1 1 0 00-1-1zm-1 5a1 1 0 100 2h2a1 1 0 100-2H8z" clipRule="evenodd"></path></svg>
+                  Review
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Right Panel - Photo Placeholder */}
+          <aside className="w-full md:w-64 flex-shrink-0 bg-white border border-gray-300 rounded-sm shadow-sm p-4 text-center flex flex-col items-center justify-center h-fit">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">Photograph</h3>
+            <div className="w-48 h-60 bg-blue-100 rounded-md border border-blue-300 flex items-center justify-center text-blue-700 font-bold text-xl overflow-hidden">
+              <span className="text-gray-600 text-center">Your Image<br/>here</span>
+            </div>
+          </aside>
+        </div>
+      </main>
+
+      {/* Sticky Footer */}
+      <footer className="w-full bg-gray-800 text-white p-4 text-center text-sm sticky bottom-0 z-10">
+        <button
+          onClick={() => setShowFinishModal(true)}
+          className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-200 shadow-md mr-4"
+        >
+          Click here to FINISH Your Test
+        </button>
+        This is just a Sample of Computer Based NUST Entry Test (CBNET) .
+        <a href="#" className="underline hover:text-blue-300 ml-2">Go to Main Page</a>
+        <a href="#" className="underline hover:text-blue-300 ml-2" onClick={() => { localStorage.clear(); window.location.reload(); }}>Go to Login Page</a>
+      </footer>
+
+      {/* Finish Test Confirmation Modal */}
+      {showFinishModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm text-center transform scale-100 transition-transform duration-300 ease-out">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Confirm Test Submission</h3>
+            <p className="text-gray-600 mb-6">Are you sure you want to finish the test?</p>
+            <div className="flex justify-center space-x-4">
+              <button
+                onClick={() => setShowFinishModal(false)}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-5 rounded-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowFinishModal(false);
+                  handleSubmitTest();
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                Finish Test
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Summary Component - Remains largely the same, only ensuring it consumes the updated testResults
+const Summary = ({ testResults }) => {
+  const {
+    totalQuestions,
+    totalCorrect,
+    totalAttempted,
+    sectionScores,
+    questionStatuses,
+    timeLeftAtSubmission,
+    timedOut,
+    userAnswers, // Now passed explicitly
+  } = testResults;
+
+  const totalIncorrect = totalAttempted - totalCorrect;
+  const totalUnattempted = totalQuestions - totalAttempted;
+
+  const handleDownloadResults = () => {
+    let content = `Test Results: NUST NET-2025 (English Section)\n\n`;
+    content += `Total Questions: ${totalQuestions}\n`;
+    content += `Attempted Questions: ${totalAttempted}\n`;
+    content += `Correct Answers: ${totalCorrect}\n`;
+    content += `Incorrect Answers: ${totalIncorrect}\n`;
+    content += `Unattempted Questions: ${totalUnattempted}\n`;
+    content += `Time Remaining: ${formatTime(timeLeftAtSubmission)}\n`;
+    if (timedOut) {
+      content += `Submission Reason: Time Expired\n`;
+    } else {
+      content += `Submission Reason: Manual Submission\n`;
+    }
+    content += `\n--- Section-wise Scores ---\n`;
+    for (const section in sectionScores) {
+      content += `${section}: ${sectionScores[section].correct} / ${sectionScores[section].total}\n`;
+    }
+    content += `\n--- Question Breakdown ---\n`;
+
+    questionsData.forEach((q) => {
+      const status = questionStatuses[q.id];
+      const selectedAnswer = userAnswers[q.id]; // Use the passed userAnswers
+      const isCorrect = selectedAnswer === q.answer;
+
+      let statusText = '';
+      if (status.attempted) {
+        statusText = isCorrect ? 'Correct' : 'Incorrect';
+      } else {
+        statusText = 'Unattempted';
+      }
+      if (status.markedForReview) {
+        statusText += ' (Marked for Review)';
+      }
+
+      content += `\nQ${q.id + 1}: ${q.question.split('\n')[0].substring(0, 50)}...\n`;
+      content += `  Your Answer: ${selectedAnswer || 'N/A'}\n`;
+      content += `  Correct Answer: ${q.answer}\n`;
+      content += `  Status: ${statusText}\n`;
+    });
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'NUST_CBNET_Results.txt';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleLogout = () => {
+    localStorage.clear(); // Clear all test-related data
+    window.location.reload(); // Reload the page to go back to login
+  };
+
+  // Helper to format time (re-used from TestInterface)
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-4 font-inter">
+      <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-4xl mx-auto border border-gray-200">
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-6 border-b pb-4">
+          Test Results: NUST NET-2025 (English Section)
+        </h2>
+
+        {timedOut && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md relative mb-6">
+            <strong className="font-bold">Time Expired!</strong> Your test was automatically submitted.
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-blue-50 p-6 rounded-lg shadow-sm border border-blue-200">
+            <h3 className="text-xl font-semibold text-blue-800 mb-4">Overall Performance</h3>
+            <p className="text-gray-700 text-lg">Total Questions: <span className="font-bold">{totalQuestions}</span></p>
+            <p className="text-gray-700 text-lg">Attempted: <span className="font-bold">{totalAttempted}</span></p>
+            <p className="text-green-700 text-lg">Correct: <span className="font-bold">{totalCorrect}</span></p>
+            <p className="text-red-700 text-lg">Incorrect: <span className="font-bold">{totalIncorrect}</span></p>
+            <p className="text-gray-700 text-lg">Unattempted: <span className="font-bold">{totalUnattempted}</span></p>
+            <p className="text-gray-700 text-lg mt-2">Time Remaining: <span className="font-bold">{formatTime(timeLeftAtSubmission)}</span></p>
+          </div>
+
+          <div className="bg-green-50 p-6 rounded-lg shadow-sm border border-green-200">
+            <h3 className="text-xl font-semibold text-green-800 mb-4">Section-wise Breakdown</h3>
+            <ul className="space-y-2">
+              {Object.entries(sectionScores).map(([sectionName, score]) => (
+                <li key={sectionName} className="text-gray-700 text-lg">
+                  <span className="font-medium">{sectionName}:</span> {score.correct} / {score.total} Correct
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className="mb-8">
+          <h3 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Detailed Review</h3>
+          <div className="space-y-6">
+            {questionsData.map((q) => {
+              const status = questionStatuses[q.id];
+              const selectedAnswer = userAnswers[q.id];
+              const isCorrect = selectedAnswer === q.answer;
+
+              return (
+                <div key={q.id} className="p-4 rounded-md shadow-sm border border-gray-200 bg-white">
+                  <p className="font-semibold text-lg text-gray-800">Q{q.id + 1}. {q.question}</p>
+                  <ul className="mt-2 space-y-1">
+                    {q.options.map((option, idx) => (
+                      <li
+                        key={idx}
+                        className={`p-2 rounded-md ${
+                          selectedAnswer === option
+                            ? isCorrect
+                              ? 'bg-green-100 text-green-800 font-medium' // User's correct answer
+                              : 'bg-red-100 text-red-800 font-medium'    // User's incorrect answer
+                            : q.answer === option
+                              ? 'bg-green-50 text-green-700'              // Correct answer (if user didn't pick it)
+                              : 'text-gray-700'
+                        }`}
+                      >
+                        {option}
+                        {selectedAnswer === option && isCorrect && <span className="ml-2 text-green-600">&#10003; Your Answer</span>}
+                        {selectedAnswer === option && !isCorrect && <span className="ml-2 text-red-600">&#10007; Your Answer</span>}
+                        {q.answer === option && selectedAnswer !== option && <span className="ml-2 text-green-600"> (Correct)</span>}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-sm text-gray-600">
+                    Status: {status.attempted ? (status.correct ? 'Correct' : 'Incorrect') : 'Unattempted'}
+                    {status.markedForReview && <span className="ml-1 text-yellow-600">(Marked for Review)</span>}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap justify-center gap-4 mt-8 pt-6 border-t border-gray-200">
+          <button
+            onClick={handleDownloadResults}
+            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-md shadow-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+          >
+            Download Results (Text)
+          </button>
+          <button
+            onClick={handleLogout}
+            className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-md shadow-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Add Tailwind CSS for overall styling
+const TailwindCSS = () => (
+  <style>
+    {`
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      body {
+        font-family: 'Inter', sans-serif;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      .text-shadow {
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+    `}
+  </style>
+);
+
+// Main rendering of the App component
+export default function NustCBTApp() {
+  return (
+    <>
+      <TailwindCSS />
+      <App />
+    </>
+  );
+}
+
